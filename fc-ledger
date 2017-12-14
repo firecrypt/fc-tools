@@ -1,0 +1,82 @@
+#!/bin/bash
+
+###############################################################################
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+###############################################################################
+
+script_name=$(basename "$0")
+script_dir="$( cd "$(dirname "$0")" ; pwd -P )"
+
+source "${script_dir}/fc-common"
+fc_enforce_root
+
+###############################################################################
+# Default options
+set -e # stop on error
+
+###############################################################################
+# Usage
+usage() {
+    echo "usage: ${script_name} [OPTS]"
+    echo "OPTS:"
+    echo "    -l | --lic                   Display license"
+    echo "    -h | --help                  Display this help message"
+    exit 0
+}
+
+###############################################################################
+# Parse cli args
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -l|--lic) fc_legal ;;
+        -h*|--help*|*) usage ;;
+    esac
+    shift # arg parsed, move to next one
+done
+
+fc_ledger_install_ubuntu() {
+    {
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"1b7c\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"2b7c\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"3b7c\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"4b7c\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"1807\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"1808\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2c97\", ATTRS{idProduct}==\"0000\", MODE=\"0660\", GROUP=\"plugdev\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2c97\", ATTRS{idProduct}==\"0001\", MODE=\"0660\", GROUP=\"plugdev\"";
+    } >> /etc/udev/rules.d/20-hw1.rules
+}
+
+fc_ledger_install_fedora() {
+    {
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"1b7c\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"2b7c\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"3b7c\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"4b7c\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"1807\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2581\", ATTRS{idProduct}==\"1808\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2c97\", ATTRS{idProduct}==\"0000\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+        echo "SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\"2c97\", ATTRS{idProduct}==\"0001\", MODE=\"0660\", OWNER=\"$(whoami)\"";
+    } >> /etc/udev/rules.d/20-hw1.rules
+}
+
+fc_ledger_install_finalize() {
+    udevadm trigger
+    udevadm control --reload-rules
+}
+
+###############################################################################
+# Script execution start
+# TODO: check for existing udev rules
+
+if [ "$(fc_distro_is "fedora")" == "true" ]; then
+    fc_ledger_install_fedora
+elif [ "$(fc_distro_is "ubuntu")" == "true" ]; then
+    fc_ledger_install_ubuntu
+fi
+
+fc_ledger_install_finalize

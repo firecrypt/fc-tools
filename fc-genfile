@@ -1,0 +1,87 @@
+#!/bin/bash
+
+###############################################################################
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+###############################################################################
+
+script_name=$(basename "$0")
+script_dir="$( cd "$(dirname "$0")" ; pwd -P )"
+
+source "${script_dir}/fc-common"
+
+###############################################################################
+# Default options
+set -e # stop on error
+
+###############################################################################
+# Usage
+usage() {
+    echo "usage: ${script_name} [OPTS]"
+    echo "OPTS:"
+    echo "    -t | --template              Template to use (valid options: bash)"
+    echo "    -o | --output                Output file name"
+    echo "    -l | --lic                   Display license"
+    echo "    -h | --help                  Display this help message"
+    exit 0
+}
+
+###############################################################################
+# Parse cli args
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        # TODO: --sublic: sublicense the template
+        -t|--template) cli_selected_template=$2; shift ;;
+        -o|--output) cli_output_file=$2; shift ;;
+        -d|--debug) cli_debug="true" ;;
+        -l|--lic) fc_legal -n "${script_name}" -d "${script_dir}"; exit 0;;
+        -h*|--help*|*) usage ;;
+    esac
+    shift # arg parsed, move to next one
+done
+
+###############################################################################
+# Verify input
+verify() {
+    if [ -z "${cli_selected_template}" ]; then
+        echo "Template not selected."
+        exit 1
+    fi
+
+    if [ -z "${cli_output_file}" ]; then
+        echo "Output file not selected."
+        exit 1
+    fi
+}
+
+###############################################################################
+# Debug
+debug_template() {
+    echo "script_name: ${script_name}"
+    echo "script_dir: ${script_dir}"
+    echo "running_root: $(fc_check_root)"
+}
+
+###############################################################################
+# Copy whichever template was selected
+copy_template() {
+    if [ "${cli_selected_template}" = "bash" ]; then
+        cp "${script_dir}/templates/bash.template" "${cli_output_file}"
+        chmod +x "${cli_output_file}"
+    fi
+}
+
+###############################################################################
+# Script execution start
+if [ "${cli_debug}" = "true" ]; then
+    debug_template
+fi
+verify
+copy_template

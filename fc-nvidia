@@ -1,0 +1,135 @@
+#!/bin/bash
+
+###############################################################################
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+###############################################################################
+
+cuda_8_toolkit_link="https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_375.26_linux-run"
+cuda_8_toolkit_name="cuda_8.0.61_375.26_linux-run"
+
+cuda_8_toolkit_patch_link="https://developer.nvidia.com/compute/cuda/8.0/Prod2/patches/2/cuda_8.0.61.2_linux-run"
+cuda_8_toolkit_patch_name="cuda_8.0.61.2_linux-run"
+
+nvidia384_driver_link="http://us.download.nvidia.com/XFree86/Linux-x86_64/384.98/NVIDIA-Linux-x86_64-384.98.run"
+nvidia384_driver_name="NVIDIA-Linux-x86_64-384.98.run"
+
+script_name=$(basename "$0")
+script_dir="$( cd "$(dirname "$0")" ; pwd -P )"
+
+source "${script_dir}"/fc-common
+fc_enforce_root
+
+###############################################################################
+# Default options
+set -e # stop on error
+
+###############################################################################
+# Usage
+usage() {
+    echo "usage: ${script_name} [OPTS]"
+    echo "OPTS:"
+    echo "    -b | --blacklist-nouveau     Remove and blacklist nouveau driver"
+    echo "    -l | --lic                   Display license"
+    echo "    -h | --help                  Display this help message"
+    exit 0
+}
+
+###############################################################################
+# Blacklist the nouveau driver
+fc_blacklist_nouveau() {
+    echo "Installing required packages..."
+    apt-get -y install dkms build-essential linux-headers-generic
+
+    {
+        echo "";
+        echo "# firecrypt remove and blacklist nouveau";
+        echo "blacklist nouveau";
+        echo "blacklist lbm-nouveau";
+        echo "options nouveau modeset=0";
+        echo "alias nouveau off";
+        echo "alias lbm-nouveau off";
+        echo "";
+    } >> /etc/modprobe.d/blacklist.conf
+
+    echo options nouveau modeset=0 | tee -a /etc/modprobe.d/nouveau-kms.conf
+
+    update-initramfs -u
+
+    fc_ask_reboot
+
+    return 0
+}
+
+###############################################################################
+# Install cuda
+fc_install_cuda() {
+    # TODO: make sure nouveau driver is not installed
+    # TODO: make sure nvidia driver is not installed
+    # TODO: silent wget
+
+    echo "Fetching toolkit"
+    wget "${cuda_8_toolkit_link}" -P "${HOME}/Downloads"
+    chmod +x "${HOME}/Downloads/${cuda_8_toolkit_name}"
+
+    echo "Installing toolkit"
+    "${HOME}/Downloads/${cuda_8_toolkit_name}" --silent --toolkit
+
+    return 0
+}
+
+###############################################################################
+# Patch cuda
+fc_patch_cuda() {
+    # TODO: make sure toolkit is installed
+    # TODO: silent wget
+
+    echo "Fetching toolkit patch"
+    wget "${cuda_8_toolkit_patch_link}" -P "${HOME}/Downloads"
+    chmod +x "${HOME}/Downloads/${cuda_8_toolkit_patch_name}"
+
+    echo "Installing toolkit"
+    "${HOME}/Downloads/${cuda_8_toolkit_patch_name}" --silent --accept-eula
+
+    return 0
+}
+
+###############################################################################
+# Install driver
+fc_install_driver() {
+    # TODO: make sure nouveau driver is not installed
+    # TODO: make sure cuda toolkit driver is installed
+
+    echo "Fetching toolkit"
+    wget "${nvidia384_driver_link}" -P "${HOME}/Downloads"
+    chmod +x "${HOME}/Downloads/${nvidia384_driver_name}"
+
+    echo "Installing toolkit"
+    "${HOME}/Downloads/${nvidia384_driver_name}" --silent
+
+    return 0
+}
+
+###############################################################################
+# Parse cli args
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -b|--blacklist-nouveau) fc_blacklist_nouveau ;;
+        -c|--install-cuda) fc_install_cuda ;;
+        -d|--install-driver) fc_install_driver ;;
+        -p|--patch-cuda) fc_patch_cuda ;;
+        -l|--lic) fc_legal -n "${script_name}" -d "${script_dir}"; exit 0;;
+        -h*|--help*|*) usage ;;
+    esac
+    shift # arg parsed, move to next one
+done
+
+###############################################################################
+# Script execution start

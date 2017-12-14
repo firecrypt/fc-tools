@@ -1,0 +1,111 @@
+#!/bin/bash
+
+###############################################################################
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+###############################################################################
+
+###############################################################################
+# Legal
+fc_legal() {
+    local arg_name="unknown"
+    local arg_dir="unknown"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -n|--name) arg_name=${2}; shift ;;
+            -d|--dir) arg_dir=${2}; shift ;;
+        esac
+        shift
+    done
+
+    printf "script: %s\n" "${arg_name}"
+    printf '%b\n' "$(cat "${arg_dir}"/LICENSE)"
+    return 0
+}
+
+###############################################################################
+# Check for root status
+fc_check_root() {
+    local running_root="false"
+
+    if [ "${EUID}" -ne 0 ]; then
+        running_root="false"
+    else
+        running_root="true"
+    fi
+
+    printf "%s" "${running_root}"
+    return 0
+}
+
+###############################################################################
+# Exit script if not root
+fc_enforce_root() {
+    if [ "$(fc_check_root)" = "false" ]; then
+        printf "Must be run as root user\n"
+        exit 1
+    fi
+}
+
+###############################################################################
+# Load distro name and version
+fc_get_distro() {
+    local os_name="unknown"
+
+    if [ -f /etc/os-release ]; then
+        # systemd
+        source /etc/os-release
+        os_name=$( printf "%s" "${NAME}" | awk '{print tolower($0)}')
+    fi
+
+    printf "%s" "${os_name}"
+}
+
+###############################################################################
+# Check if distro is argument
+fc_distro_is() {
+    local dist_res="unknown"
+
+    dist_res=$(fc_get_distro)
+
+    if [ "${dist_res}" == "${1}" ]; then
+        printf "true"
+    else
+        printf "false"
+    fi
+
+    return 0
+}
+
+###############################################################################
+# Enforce the distro to run on
+fc_enforce_distro() {
+    if [ "$(fc_distro_is "${1}")" == "false" ]; then
+        printf "Must be run using %s\n" "${1}"
+        exit 1
+    fi
+}
+
+# TODO: fc_ask_reboot
+###############################################################################
+# Ask/recommend reboot
+fc_ask_reboot() {
+    # TODO: force reboot
+
+    if [ "$(fc_check_root)" = "false" ]; then
+        # shellcheck disable=SC2006
+        echo "Reboot required, perform by running `sudo reboot`"
+    else
+        while true; do
+            read -p "Reboot required, reboot now? [y/n]: " yn
+            case ${yn} in
+                [Yy]* ) printf "Performing reboot...\n"; exit 0;;
+                [Nn]* ) printf "Ok. Not rebooting at this time.\n"; return 0;;
+                * ) printf "Please answer y/n.\n";;
+            esac
+        done
+    fi
+}

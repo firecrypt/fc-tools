@@ -1,0 +1,41 @@
+# Objects
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared libraries
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executable
+*.exe
+*.out
+*.app
+*.hex
+
+# Build output
+/build
+/out
+/output
+
+# CMake
+
+# Autotools

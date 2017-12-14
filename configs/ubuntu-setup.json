@@ -1,0 +1,8 @@
+{
+    "build-tools":
+    [
+        "cmake",
+        "cmake-curses-gui",
+        "build-essential"
+    ]
+}
